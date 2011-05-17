@@ -11,6 +11,8 @@ class Controller_Media extends Controller {
 
 		if ($media !== FALSE)
 		{
+			$media = $media->smushit();
+
 			// Check for gzip flag
 			if ($this->gzip === TRUE)
 			{

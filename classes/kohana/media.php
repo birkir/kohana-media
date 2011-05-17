@@ -39,6 +39,7 @@ class Kohana_Media {
 	public function __construct()
 	{
 		$this->_cache_dir = APPPATH.'cache'.DIRECTORY_SEPARATOR.'media';
+		$this->request = Request::current();
 	}
 
 	/**
@@ -87,18 +88,18 @@ class Kohana_Media {
 		if (in_array('gzip', array_keys($encodings)))
 		{
 			// Set cache filename
-			$cache = $this->_cache_dir.DIRECTORY_SEPARATOR.sha1(Request::current()->uri().filemtime($this->cache).'gzip');
+			$cache = $this->_cache_dir.DIRECTORY_SEPARATOR.sha1($this->request->uri().filemtime($this->cache).'gzip');
 
-			if ( ! $this->_changed($cache) OR isset($_GET['nocache']))
+			if ($this->_changed($cache))
 			{
 				// Write gzipped contents
 				$gf = gzopen($cache, 'w9');
 				gzwrite($gf, $this->_read_cache());
 				gzclose($gf);
-
-				// Set the new cache path
-				$this->cache = $cache;
 			}
+
+			// Set the new cache path
+			$this->cache = $cache;
 		}
 
 		return $this;
@@ -111,15 +112,43 @@ class Kohana_Media {
 	 */
 	public function minify()
 	{
-		if ($this->ext == 'css')
-		{
-			
-		}
-		else if($this->ext == 'js')
+		$cache = $this->_cache_dir.DIRECTORY_SEPARATOR.sha1($this->request->uri().filemtime($this->cache).'minify');
+		
+		if (in_array($this->ext, array('css', 'js')) AND ! $this->_changed($cache))
 		{
 			
 		}
 		
+		return $this;
+	}
+
+	/**
+	 * Smush.it API call
+	 *
+	 * @return  void
+	 */
+	public function smushit()
+	{
+		$cache = $this->_cache_dir.DIRECTORY_SEPARATOR.sha1($this->request->uri().filemtime($this->cache).'smushit');
+
+		if ($this->_changed($cache))
+		{
+			$json = json_decode(file_get_contents('http://www.smushit.com/ysmush.it/ws.php?img='.urlencode(URL::base($this->request).$this->request->uri())));
+
+			if ( ! empty($json->error) AND isset($json->dest))
+			{
+				$this->_write_cache(file_get_contents($json->dest), $cache);
+			}
+			else
+			{
+				$this->_write_cache($this->_read_cache(), $cache);
+			}
+		}
+		else
+		{
+			$this->cache = $cache;
+		}
+
 		return $this;
 	}
 
@@ -145,8 +174,19 @@ class Kohana_Media {
 	 */
 	private function _changed($cache = NULL)
 	{
+		// Check for nocache flag
+		if (isset($_GET['nocache']))
+		{
+			return TRUE;
+		}
+
 		// Check if file does exist and is newer than the cache
-		if (file_exists($cache) AND strtotime(date('r', filemtime($this->file))) >= strtotime(date('r', filemtime($cache))))
+		if ( ! file_exists($cache))
+		{
+			return TRUE;
+		}
+
+		if (strtotime(date('r', filemtime($this->file))) >= strtotime(date('r', filemtime($cache))))
 		{
 			return TRUE;
 		}
@@ -188,7 +228,7 @@ class Kohana_Media {
 		}
 
 		// Create the cache filename
-		$this->cache = $this->_cache_dir.DIRECTORY_SEPARATOR.sha1($filename);
+		$this->cache = $filename;
 
 		// Write new file contents
 		$fh = fopen($this->cache, 'w');
