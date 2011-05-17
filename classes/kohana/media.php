@@ -25,9 +25,9 @@ class Kohana_Media {
 	 * @param   array  configuration
 	 * @return  Media
 	 */
-	public static function factory(array $config = array())
+	public static function factory()
 	{
-		return new Media($config);
+		return new Media();
 	}
 
 	/**
@@ -36,9 +36,8 @@ class Kohana_Media {
 	 * @param   array  configuration
 	 * @return  void
 	 */
-	public function __construct(array $config = array())
+	public function __construct()
 	{
-		$this->config = $config;
 		$this->_cache_dir = APPPATH.'cache'.DIRECTORY_SEPARATOR.'media';
 	}
 
@@ -59,12 +58,13 @@ class Kohana_Media {
 		// Check if the file exists
 		if ($file = Kohana::find_file('media', $file, $this->ext))
 		{
+			// Set file and cache variable to source file
 			$this->file = $this->cache = $file;
 
 			return $this;
 		}
-		else
-			return FALSE;
+
+		return FALSE;
 	}
 
 	/**
@@ -74,6 +74,7 @@ class Kohana_Media {
 	 */
 	public function gzip()
 	{
+		// Check if file was loaded
 		if ($this->file === NULL)
 		{
 			throw new Kohana_Exception('No file was loaded by the media module.');
@@ -103,6 +104,11 @@ class Kohana_Media {
 		return $this;
 	}
 
+	/**
+	 * Minify wrapper for js and css files
+	 *
+	 * @return  void
+	 */
 	public function minify()
 	{
 		if ($this->ext == 'css')
@@ -139,12 +145,8 @@ class Kohana_Media {
 	 */
 	private function _changed($cache = NULL)
 	{
-		if ( ! file_exists($cache))
-		{
-			return FALSE;
-		}
-
-		if (strtotime(date('r', filemtime($this->file))) >= strtotime(date('r', filemtime($cache))))
+		// Check if file does exist and is newer than the cache
+		if (file_exists($cache) AND strtotime(date('r', filemtime($this->file))) >= strtotime(date('r', filemtime($cache))))
 		{
 			return TRUE;
 		}
@@ -175,6 +177,7 @@ class Kohana_Media {
 	 */
 	private function _write_cache($contents = NULL, $filename = NULL)
 	{
+		// Check if cache directory exists
 		if ( ! is_dir($this->_cache_dir))
 		{
 			// Create the cache directory
