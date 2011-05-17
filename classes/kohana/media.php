@@ -227,7 +227,7 @@ class Kohana_Media {
 			chmod($this->_cache_dir, 02777);
 		}
 
-		// Create the cache filename
+		// Set the cache filename
 		$this->cache = $filename;
 
 		// Write new file contents

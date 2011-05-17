@@ -1,19 +1,45 @@
 <?php defined('SYSPATH') or die('No direct script access.');
-
+/**
+ * Media class
+ *
+ * @package    Kohana/Media
+ * @category   Controller
+ * @author     Birkir Rafn Gudjonsson
+ * @copyright  (c) 2010 BRG
+ * @license    http://kohanaphp.com/license.html
+ */
 class Controller_Media extends Controller {
 
+	// Gzip output
 	private $gzip = TRUE;
 
+	/**
+	 * Process the file
+	 *
+	 * @param   string  filename
+	 * @return  void
+	 */
 	public function action_process($filename = NULL)
 	{
+		// Initialize Media
 		$media = Media::factory()
 		->load($filename);
 
 		if ($media !== FALSE)
 		{
-			$media = $media->smushit();
+			// Smush.it png, gif and jpg files
+			if (in_array($this->ext, array('png', 'gif', 'jpg', 'jpeg')))
+			{
+				$media = $media->smushit();
+			}
 
-			// Check for gzip flag
+			// Minify js and css files
+			if (in_array($this->ext, array('js', 'css')))
+			{
+				$media = $media->minify();
+			}
+
+			// Gzip files if flagged
 			if ($this->gzip === TRUE)
 			{
 				$media = $media->gzip();
