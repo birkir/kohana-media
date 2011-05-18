@@ -6,25 +6,21 @@ Installation
 
 1.  Add the module to kohana modules directory
 
-a)  If you have a git repo, you can add it as an submodule
+    a)  If you have a git repo, you can add it as an submodule
 
-`git submodule add git://github.com/birkir/media.git modules/media`
+    `git submodule add git://github.com/birkir/media.git modules/media`
 
-`git submodule init`
+    `git submodule init`
 
-`git submodule update`
+    `git submodule update`
 
-b)  You can also just add it to your project
+    b)  You can also just add it to your project
 
-`
-git clone git://github.com/birkir/media.git
-`
+    `git clone git://github.com/birkir/media.git`
 
 2.  Go to APPPATH/bootstrap.php and add this to your Kohana::modules array
 
-`
-'media'      => MODPATH.'media',      // Media module
-`
+    `'media'      => MODPATH.'media',      // Media module`
 
 3.  The module is ready to rock.
 
