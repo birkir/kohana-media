@@ -10,7 +10,9 @@ Installation
 
 `
 git submodule add git://github.com/birkir/media.git modules/media
+
 git submodule init
+
 git submodule update
 `
 
