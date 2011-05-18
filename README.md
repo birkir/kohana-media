@@ -4,9 +4,9 @@ Media module for Kohana 3.1+
 Installation
 -------------
 
-1. Add the module to kohana modules directory
+- Add the module to kohana modules directory
 
-1.1. If you have a git repo, you can add it as an submodule
+-- If you have a git repo, you can add it as an submodule
 
 `git submodule add git://github.com/birkir/media.git modules/media`
 
@@ -14,19 +14,19 @@ Installation
 
 `git submodule update`
 
-1.2. You can also just add it to your project
+-- You can also just add it to your project
 
 `
 git clone git://github.com/birkir/media.git
 `
 
-2. Go to APPPATH/bootstrap.php and add this to your Kohana::modules array
+- Go to APPPATH/bootstrap.php and add this to your Kohana::modules array
 
 `
 'media'      => MODPATH.'media',      // Media module
 `
 
-3. The module is ready to rock.
+- The module is ready to rock.
 
 
 Usage
