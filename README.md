@@ -9,7 +9,9 @@ Installation
 1a. If you have a git repo, you can add it as an submodule
 
 `git submodule add git://github.com/birkir/media.git modules/media`
+
 `git submodule init`
+
 `git submodule update`
 
 1b. You can also just add it to your project
