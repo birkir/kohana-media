@@ -3,7 +3,7 @@
  * Media class
  *
  * @package    Kohana/Media
- * @category   Controller
+ * @category   Controllers
  * @author     Birkir Rafn Gudjonsson
  * @copyright  (c) 2010 BRG
  * @license    http://kohanaphp.com/license.html
@@ -28,13 +28,13 @@ class Controller_Media extends Controller {
 		if ($media !== FALSE)
 		{
 			// Smush.it png, gif and jpg files
-			if (in_array($this->ext, array('png', 'gif', 'jpg', 'jpeg')))
+			if (in_array($media->ext, array('png', 'gif', 'jpg', 'jpeg')))
 			{
 				$media = $media->smushit();
 			}
 
 			// Minify js and css files
-			if (in_array($this->ext, array('js', 'css')))
+			if (in_array($media->ext, array('js', 'css')))
 			{
 				$media = $media->minify();
 			}
