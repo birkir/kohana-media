@@ -4,11 +4,11 @@
  *
  * @package    Kohana/Media
  * @category   Controllers
- * @author     Birkir Rafn Gudjonsson
- * @copyright  (c) 2010 BRG
+ * @author     Birkir Gudjonsson
+ * @copyright  (c) 2013
  * @license    http://kohanaphp.com/license.html
  */
-class Controller_Media extends Controller {
+class Kohana_Controller_Media extends Controller {
 
 	// Gzip output
 	private $gzip = TRUE;
@@ -57,4 +57,5 @@ class Controller_Media extends Controller {
 			$this->response->status(404);
 		}
 	}
-}
+
+} // End Controller Media
