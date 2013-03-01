@@ -1,8 +1,8 @@
 <?php defined('SYSPATH') or die('No direct script access.');
 
-// Set the media route
-Route::set('media', 'media(/<filename>)', array('filename' => '.+'))
+Route::set('media', 'media(/<file>)', array('file' => '.+'))
 	->defaults(array(
-		'controller' => 'media',
-		'action' => 'process'
+		'controller' => 'Media',
+		'action'     => 'media',
+		'file'       => NULL
 	));
