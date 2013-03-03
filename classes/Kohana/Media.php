@@ -113,12 +113,12 @@ class Kohana_Media {
 	public function minify()
 	{
 		$cache = $this->_cache_dir.DIRECTORY_SEPARATOR.sha1($this->request->uri().filemtime($this->cache).'minify');
-		
+
 		if (in_array($this->ext, array('css', 'js')) AND ! $this->_changed($cache))
 		{
-			
+
 		}
-		
+
 		return $this;
 	}
 

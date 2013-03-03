@@ -19,18 +19,18 @@ class Kohana_Controller_Media extends Controller {
 	 * @param   string  filename
 	 * @return  void
 	 */
-	public function action_process($filename = NULL)
+	public function action_media()
 	{
 		// Initialize Media
 		$media = Media::factory()
-		->load($filename);
+		->load($this->request->param('file'));
 
 		if ($media !== FALSE)
 		{
 			// Smush.it png, gif and jpg files
 			if (in_array($media->ext, array('png', 'gif', 'jpg', 'jpeg')))
 			{
-				$media = $media->smushit();
+//				$media = $media->smushit();
 			}
 
 			// Minify js and css files
@@ -47,7 +47,7 @@ class Kohana_Controller_Media extends Controller {
 			}
 
 			// Set response body and headers
-			$this->response->check_cache(sha1($this->request->uri()).filemtime($media->file), $this->request);
+			$this->check_cache(sha1($this->request->uri()).filemtime($media->file));
 			$this->response->body($media->render());
 			$this->response->headers('content-type',  File::mime_by_ext($media->ext));
 			$this->response->headers('last-modified', date('r', filemtime($media->file)));
