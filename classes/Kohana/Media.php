@@ -39,6 +39,8 @@ class Kohana_Media {
 	public function __construct()
 	{
 		$this->_cache_dir = APPPATH.'cache'.DIRECTORY_SEPARATOR.'media';
+		$this->_check_cache_exists();
+		
 		$this->request = Request::current();
 	}
 
@@ -217,16 +219,8 @@ class Kohana_Media {
 	 */
 	private function _write_cache($contents = NULL, $filename = NULL)
 	{
-		// Check if cache directory exists
-		if ( ! is_dir($this->_cache_dir))
-		{
-			// Create the cache directory
-			mkdir($this->_cache_dir, 02777);
-
-			// Set permissions (must be manually set to fix umask issues)
-			chmod($this->_cache_dir, 02777);
-		}
-
+		$this->_check_cache_exists();
+		
 		// Set the cache filename
 		$this->cache = $filename;
 
@@ -235,4 +229,23 @@ class Kohana_Media {
 		fwrite($fh, $contents);
 		fclose($fh);
 	}
+	
+	/**
+	 * Check if cache directory exists.  If not, create it.
+	 *
+	 * @return  void
+	 */
+	private function _check_cache_exists()
+	{
+		// Check if cache directory exists
+		if ( ! is_dir($this->_cache_dir))
+		{
+			// Create the cache directory
+			mkdir($this->_cache_dir, 02777);
+		
+			// Set permissions (must be manually set to fix umask issues)
+			chmod($this->_cache_dir, 02777);
+		}
+	}
+
 }
