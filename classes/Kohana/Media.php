@@ -10,242 +10,140 @@
  */
 class Kohana_Media {
 
-	// Loaded file
-	public $file = NULL;
-
-	// Currently cached file
-	public $cache = NULL;
-
-	// File extension
-	public $ext = NULL;
+	protected static $_combine_buffer = array();
 
 	/**
-	 * Creates a new Media object.
+	 * Add script file to combine buffer on production.
 	 *
-	 * @param   array  configuration
-	 * @return  Media
+	 * @param  string
+	 * @param  array
+	 * @return mixed
 	 */
-	public static function factory()
+	public static function script($file, $combine = TRUE)
 	{
-		return new Media();
+		// add to combine buffer
+		if ($combine === TRUE)
+		{
+			Media::$_combine_buffer[] = array(
+				'file' => $file,
+				'type' => 'script',
+				'rel'  => 'script'
+			);
+		}
+
+		// render if environment is greater than staging
+		if (Kohana::$environment > Kohana::STAGING OR $combine === FALSE)
+		{
+			return HTML::script((strpos($file, '://') === FALSE ? 'media/' : NULL).$file);
+		}
+
+		return NULL;
 	}
 
-	/**
-	 * Creates a new Media object.
-	 *
-	 * @param   array  configuration
-	 * @return  void
-	 */
-	public function __construct()
+	public static function style($file, $combine = TRUE, $rel = 'stylesheet')
 	{
-		$this->_cache_dir = APPPATH.'cache'.DIRECTORY_SEPARATOR.'media';
-		$this->_check_cache_exists();
-		
-		$this->request = Request::current();
+		// add to combine buffer
+		if ($combine === TRUE)
+		{
+			Media::$_combine_buffer[] = array(
+				'file' => $file,
+				'type' => 'style',
+				'rel'  => $rel
+			);
+		}
+
+		// render if environment is greater than staging
+		if (Kohana::$environment > Kohana::STAGING OR $combine === FALSE)
+		{
+			return HTML::style((strpos($file, '://') === FALSE ? 'media/' : NULL).$file, ['rel' => $rel]);
+		}
+
+		return NULL;
 	}
 
-	/**
-	 * Load a media file
-	 *
-	 * @param   string  filename
-	 * @return  void
-	 */
-	public function load($filename = NULL)
+	public static function compile($file = NULL)
 	{
-		// Find the file extension
-		$this->ext = pathinfo($filename, PATHINFO_EXTENSION);
+		$filename = APPPATH.'media/'.$file;
 
-		// Remove the extension from the filename
-		$file = substr($filename, 0, -(strlen($this->ext) + 1));
-
-		// Check if the file exists
-		if ($file = Kohana::find_file('media', $file, $this->ext))
-		{
-			// Set file and cache variable to source file
-			$this->file = $this->cache = $file;
-
-			return $this;
-		}
-
-		return FALSE;
-	}
-
-	/**
-	 * Gzip loaded file
-	 *
-	 * @return   void
-	 */
-	public function gzip()
-	{
-		// Check if file was loaded
-		if ($this->file === NULL)
-		{
-			throw new Kohana_Exception('No file was loaded by the media module.');
-		}
-
-		// Find accepted encodings
-		$encodings = Request::current()->accept_encoding();
-
-		// Check if browser supports gzip encoding
-		if (in_array('gzip', array_keys($encodings)))
-		{
-			// Set cache filename
-			$cache = $this->_cache_dir.DIRECTORY_SEPARATOR.sha1($this->request->uri().filemtime($this->cache).'gzip');
-
-			if ($this->_changed($cache))
-			{
-				// Write gzipped contents
-				$gf = gzopen($cache, 'w9');
-				gzwrite($gf, $this->_read_cache());
-				gzclose($gf);
-			}
-
-			// Set the new cache path
-			$this->cache = $cache;
-		}
-
-		return $this;
-	}
-
-	/**
-	 * Minify wrapper for js and css files
-	 *
-	 * @return  void
-	 */
-	public function minify()
-	{
-		$cache = $this->_cache_dir.DIRECTORY_SEPARATOR.sha1($this->request->uri().filemtime($this->cache).'minify');
-
-		if (in_array($this->ext, array('css', 'js')) AND ! $this->_changed($cache))
-		{
-
-		}
-
-		return $this;
-	}
-
-	/**
-	 * Smush.it API call
-	 *
-	 * @return  void
-	 */
-	public function smushit()
-	{
-		$cache = $this->_cache_dir.DIRECTORY_SEPARATOR.sha1($this->request->uri().filemtime($this->cache).'smushit');
-
-		if ($this->_changed($cache))
-		{
-			$json = json_decode(file_get_contents('http://www.smushit.com/ysmush.it/ws.php?img='.urlencode(URL::base($this->request).$this->request->uri())));
-
-			if ( ! empty($json->error) AND isset($json->dest))
-			{
-				$this->_write_cache(file_get_contents($json->dest), $cache);
-			}
-			else
-			{
-				$this->_write_cache($this->_read_cache(), $cache);
-			}
-		}
-		else
-		{
-			$this->cache = $cache;
-		}
-
-		return $this;
-	}
-
-	/**
-	 * Render the file contents
-	 *
-	 * @return   string
-	 */
-	public function render()
-	{
-		if ($this->file === NULL)
-		{
-			throw new Kohana_Exception('No file was loaded by the media module.');
-		}
-
-		return self::_read_cache($this->file);
-	}
-
-	/**
-	 * Check if source file has changed since last generation of cache
-	 *
-	 * @return void
-	 */
-	private function _changed($cache = NULL)
-	{
-		// Check for nocache flag
-		if (isset($_GET['nocache']))
-		{
-			return TRUE;
-		}
-
-		// Check if file does exist and is newer than the cache
-		if ( ! file_exists($cache))
-		{
-			return TRUE;
-		}
-
-		if (strtotime(date('r', filemtime($this->file))) >= strtotime(date('r', filemtime($cache))))
-		{
-			return TRUE;
-		}
-
-		return FALSE;
-	}
-
-	/**
-	 * Read current cache contents
-	 *
-	 * @return  string
-	 */
-	private function _read_cache()
-	{
-		// Read current file contents
-		$fh = fopen($this->cache, 'r');
-		$contents = fread($fh, filesize($this->cache));
+		$fh = fopen($filename, 'r');
+		$contents = fread($fh, filesize($filename));
 		fclose($fh);
 
 		return $contents;
 	}
 
-	/**
-	 * Write contents to cache file
-	 *
-	 * @param   string  contents
-	 * @return  void
-	 */
-	private function _write_cache($contents = NULL, $filename = NULL)
+	public static function combine(array $files, $output)
 	{
-		$this->_check_cache_exists();
-		
-		// Set the cache filename
-		$this->cache = $filename;
+		// generate cache key
+		$cache = hash_hmac('sha1', 'cache-'.$output.'-'.implode('-', $files), 'media-key').'.km';
 
-		// Write new file contents
-		$fh = fopen($this->cache, 'w');
-		fwrite($fh, $contents);
-		fclose($fh);
-	}
-	
-	/**
-	 * Check if cache directory exists.  If not, create it.
-	 *
-	 * @return  void
-	 */
-	private function _check_cache_exists()
-	{
-		// Check if cache directory exists
-		if ( ! is_dir($this->_cache_dir))
+		// get output type
+		$type = ($output === 'script' ? 'js' : 'css');
+
+		if ( ! file_exists(APPPATH.'cache/media/'.$cache) OR Request::current()->query('media') === 'nocache')
 		{
-			// Create the cache directory
-			mkdir($this->_cache_dir, 02777);
-		
-			// Set permissions (must be manually set to fix umask issues)
-			chmod($this->_cache_dir, 02777);
+			$raw = '';
+
+			foreach ($files as $file)
+			{
+				$raw .= Media::compile($file).PHP_EOL;
+			}
+
+			file_put_contents(APPPATH.'cache/media/'.$cache, $raw);
+		}
+
+		return 'media/'.$cache.'.'.$type;
+	}
+
+	/**
+	 * Render media files combined or not
+	 *
+	 * @return mixed
+	 */
+	public static function render()
+	{
+		$types = array('style' => array(), 'script' => array());
+		$render = array();
+
+		// loop through combine buffer
+		foreach (Media::$_combine_buffer as $file)
+		{
+			// get type and rel
+			$type = Arr::get($file, 'type', NULL);
+			$rel  = Arr::get($file, 'rel',  NULL);
+
+			// create sub-rel array
+			if ( ! isset($types[$type][$rel]))
+			{
+				$types[$type][$rel] = array();
+			}
+
+			// add file to array
+			$types[$type][$rel][] = Arr::get($file, 'file');
+		}
+
+		// loop through type of files
+		foreach ($types as $type => $items)
+		{
+			// loop through rel types
+			foreach ($items as $rel => $group)
+			{
+				// generate combined file
+				$filename = Media::combine($group, $type);
+
+				// add to render array
+				$render[] = ($type === 'script' ? HTML::script($filename) : HTML::style($filename, array('rel' => $rel)));
+			}
+		}
+
+		// reset combine buffer
+		Media::$_combine_buffer = array();
+
+		// check for environment and output render
+		if (Kohana::$environment <= Kohana::STAGING)
+		{
+			return implode("\n", $render);
 		}
 	}
 
-}
+}  // End Kohana Media

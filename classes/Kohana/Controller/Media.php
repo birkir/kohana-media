@@ -10,9 +10,6 @@
  */
 class Kohana_Controller_Media extends Controller {
 
-	// Gzip output
-	private $gzip = TRUE;
-
 	/**
 	 * Process the file
 	 *
@@ -21,41 +18,43 @@ class Kohana_Controller_Media extends Controller {
 	 */
 	public function action_media()
 	{
-		// Initialize Media
-		$media = Media::factory()
-		->load($this->request->param('file'));
+		$filename = $this->request->param('file');
+		$info = pathinfo($filename);
+		$root = APPPATH.'media/';
 
-		if ($media !== FALSE)
+		// we have combined file here
+		if (strlen($info['filename']) === 43 AND substr($info['filename'], -3) === '.km')
 		{
-			// Smush.it png, gif and jpg files
-			if (in_array($media->ext, array('png', 'gif', 'jpg', 'jpeg')))
-			{
-//				$media = $media->smushit();
-			}
-
-			// Minify js and css files
-			if (in_array($media->ext, array('js', 'css')))
-			{
-				$media = $media->minify();
-			}
-
-			// Gzip files if flagged
-			if ($this->gzip === TRUE)
-			{
-				$media = $media->gzip();
-				$this->response->headers('content-encoding', 'gzip');
-			}
-
-			// Set response body and headers
-			$this->check_cache(sha1($this->request->uri()).filemtime($media->file));
-			$this->response->body($media->render());
-			$this->response->headers('content-type',  File::mime_by_ext($media->ext));
-			$this->response->headers('last-modified', date('r', filemtime($media->file)));
+			$root = APPPATH.'cache/media/';
 		}
-		else
+
+		$file = pathinfo($filename, PATHINFO_FILENAME);
+		$filename = $root.$file;
+
+		if ( ! file_exists($filename))
+			throw HTTP_Exception::factory(404, 'Not found');
+
+		// gzip contents
+		if ($this->request->accept_encoding('gzip'))
 		{
-			$this->response->status(404);
+			$gzip = APPPATH.'cache/media/'.$file.'.gz';
+
+			if ( ! file_exists($gzip))
+			{
+				$gf = gzopen($gzip, 'w9');
+				gzwrite($gf, file_get_contents($filename));
+				gzclose($gf);
+			}
+
+			$this->response->headers('content-encoding', 'gzip');
+			$filename = $gzip;
 		}
+
+		// Set response body and headers
+		$this->check_cache(sha1($this->request->uri()).filemtime($filename));
+		$this->response->body(file_get_contents($filename));
+		$this->response->headers('content-type', File::mime_by_ext($info['extension']));
+		$this->response->headers('last-modified', date('r', filemtime($filename)));
 	}
 
 } // End Controller Media
